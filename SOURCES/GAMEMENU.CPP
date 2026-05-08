@@ -1661,15 +1661,13 @@ S32 ChoosePlayerName(S32 mess, S32 flagflip, S32 flagnew) {
                 if (InputPlayerName(select - start, PlayerName)) {
                     char tmpPlayerFilename[ADELINE_MAX_PATH];
                     if (select == nb - 1) {
-                        do {
-                            snprintf(tmpPlayerFilename, ADELINE_MAX_PATH, "%s.LBA", PlayerName);
+                        snprintf(tmpPlayerFilename, ADELINE_MAX_PATH, "%s.LBA", PlayerName);
 #ifdef DEBUG_TOOLS
-                            if (isBugMode)
-                                GetBugPath(GamePathname, ADELINE_MAX_PATH, tmpPlayerFilename);
-                            else
+                        if (isBugMode)
+                            GetBugPath(GamePathname, ADELINE_MAX_PATH, tmpPlayerFilename);
+                        else
 #endif
-                                GetSavePath(GamePathname, ADELINE_MAX_PATH, tmpPlayerFilename);
-                        } while (FileSize(GamePathname) != 0); // TODO: Review this sorcery
+                            GetSavePath(GamePathname, ADELINE_MAX_PATH, tmpPlayerFilename);
                     } else {
                         // renommer une sauvegarde
                         snprintf(tmpPlayerFilename, ADELINE_MAX_PATH, "%s.LBA", PlayerName);
