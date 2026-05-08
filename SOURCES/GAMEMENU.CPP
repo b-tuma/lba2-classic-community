@@ -15,6 +15,7 @@
 
 #include "GAMEMENU_MOUSE.H"
 
+#include <SDL3/SDL.h>
 #include <dirent.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -26,6 +27,7 @@
 
 #define HAUTEUR_STANDARD 50
 #define MENU_SPACE 6
+#define TEMPO_REPEAT_KEY 150
 
 #define COUL_TEXT_MENU LBAWHITE // trouver blanc palette jeu
 #define COUL_LETTER_INPUT LBAWHITE
@@ -1008,9 +1010,47 @@ static S32 GameMenuSaveListHitTest(U32 mx, U32 my, S32 nb, S32 start, S32 *outSe
     return 0;
 }
 
-// TODO(gamepad): uses GetAscii() (keyboard-only) — pure-gamepad users cannot enter
-// save/profile names. Needs an on-screen D-pad character grid to close the gap.
+/* Gamepad save handler (used when no keyboard is detected).
+   New save: auto-names "Slot N" where N = highest existing slot number + 1.
+   Renaming an existing save: keeps the current name unchanged. */
+static S32 PickSaveSlot(S32 choice, char *name) {
+    (void)choice;
+
+    if (name[0] != '\0') {
+        /* Renaming an existing save via gamepad: keep the current name as-is. */
+        return TRUE;
+    }
+
+    /* New save: find the highest "Slot N" number already on disk, use N+1. */
+    char dirPath[ADELINE_MAX_PATH];
+    GetSavePath(dirPath, ADELINE_MAX_PATH, NULL);
+    int highest = 0;
+    DIR *dir = opendir(dirPath);
+    if (dir != NULL) {
+        struct dirent *file;
+        while ((file = readdir(dir)) != NULL) {
+            if (ade_strcasestr(file->d_name, "Slot ") == file->d_name) {
+                int n = atoi(file->d_name + 5); /* skip "Slot " */
+                if (n > highest)
+                    highest = n;
+            }
+        }
+        closedir(dir);
+    }
+
+    snprintf(name, MAX_SIZE_PLAYER_NAME, "Slot %d", highest + 1);
+    strcpy(PlayerName, name);
+    return TRUE;
+}
+
 S32 InputPlayerName(S32 choice, char *name) {
+    {
+        int kbCount = 0;
+        SDL_GetKeyboards(&kbCount);
+        if (kbCount == 0)
+            return PickSaveSlot(choice, name);
+    }
+
     char memoplayername[255];
     S32 flag = 1;
     S32 retval = FALSE;
@@ -1141,7 +1181,6 @@ S32 InputPlayerName(S32 choice, char *name) {
 
 /*──────────────────────────────────────────────────────────────────────────*/
 #define TEMPO_SCREEN_SAVE 110
-#define TEMPO_REPEAT_KEY 150
 
 S32 ChoosePlayerName(S32 mess, S32 flagflip, S32 flagnew) {
     S32 flag = 3;
